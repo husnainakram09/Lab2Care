@@ -1,0 +1,41 @@
+{
+  "resource_counts": {
+    "Patient": 11,
+    "ServiceRequest": 413,
+    "DiagnosticReport": 780,
+    "Observation": 2850
+  },
+  "relationship_checks": {
+    "reports": 780,
+    "patient_linked": 780,
+    "order_linked": 0,
+    "with_resolved_observations": 367
+  },
+  "first_three_report_examples": [
+    {
+      "report_id": "002596ad-b46c-43d0-6c84-daaaf2b53d55",
+      "fhir_status": "final",
+      "patient_linked": true,
+      "order_linked": false,
+      "resolved_observation_count": 0
+    },
+    {
+      "report_id": "0034f817-f892-cdfb-69f9-1b163627e59e",
+      "fhir_status": "final",
+      "patient_linked": true,
+      "order_linked": false,
+      "resolved_observation_count": 0
+    },
+    {
+      "report_id": "049750fe-79ec-11e9-b3d8-6f421842f61b",
+      "fhir_status": "final",
+      "patient_linked": true,
+      "order_linked": false,
+      "resolved_observation_count": 0
+    }
+  ],
+  "interpretation": "FHIR relationship audit only. Missing references are not proof of failed clinical follow-up.",
+  "source": "SMART on FHIR / Synthea-generated sample",
+  "license": "CC0",
+  "archive_sha256": "a9eba7c2b15ab2e027b633584669fc0ae08808056c1caddb3825e04764006bd7"
+}

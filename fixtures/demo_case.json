@@ -1,0 +1,14 @@
+{
+  "fictional": true,
+  "case_id": "CASE-001",
+  "patient_id": "PAT-001",
+  "orders": [
+    {"order_id": "T-01", "patient_id": "PAT-001", "test_code": "LAB-A"},
+    {"order_id": "T-02", "patient_id": "PAT-001", "test_code": "LAB-B"},
+    {"order_id": "T-03", "patient_id": "PAT-001", "test_code": "LAB-C"}
+  ],
+  "reports": [
+    {"report_id": "R-01", "order_id": "T-01", "patient_id": "PAT-001", "test_code": "LAB-A", "source_text": "Fictional non-clinical report A for workflow testing."},
+    {"report_id": "R-02", "order_id": "T-02", "patient_id": "PAT-001", "test_code": "LAB-B", "source_text": "Fictional non-clinical report B for workflow testing."}
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "source": "MIMIC-IV Clinical Database Demo v2.2 (PhysioNet)",
+  "license": "ODbL-1.0",
+  "source_sha256": "d51a4cf1ea63245abe7d544b0d50a928e9ee2ec5eb9a5ce85500aed0bd6c6dfc",
+  "lab_event_rows": 107727,
+  "distinct_event_ids": 107727,
+  "distinct_deidentified_subjects": 100,
+  "distinct_lab_item_ids": 498,
+  "records_without_numeric_value": 12481,
+  "records_without_any_value": 9588,
+  "records_without_unit": 14042,
+  "records_without_storetime": 992,
+  "note": "Research-only data profile. These are not patient notification or follow-up outcomes."
+}

@@ -1,0 +1,983 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Patient Follow-up | Fictional Demo</title>
+  <style>
+    :root {
+      font-family: Inter, system-ui, sans-serif;
+      color: #203044;
+      background: #f5f7fb;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e1e7ef;
+      padding: 20px max(24px, calc((100% - 1120px)/2));
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+    .brand { font-weight: 800; font-size: 21px; }
+    .tag {
+      border-radius: 20px;
+      background: #eaf3fd;
+      color: #23518a;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    main { max-width: 1120px; padding: 34px 22px; margin: auto; }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #597087;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    h1 { font-size: clamp(29px, 4vw, 43px); margin: 12px 0; }
+    h2 { margin: 0 0 10px; font-size: 21px; }
+    p { line-height: 1.6; }
+    .muted { color: #617386; }
+    .intro { max-width: 760px; margin-bottom: 30px; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .panel {
+      background: #fff;
+      border: 1px solid #e0e6ee;
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 5px 20px #243b5310;
+    }
+    .panel-note { font-size: 13px; color: #6b7b8a; }
+    .numbers { display: flex; gap: 12px; margin: 24px 0; }
+    .number {
+      flex: 1;
+      padding: 15px;
+      background: #f3f7fb;
+      border-radius: 11px;
+    }
+    .number strong { display: block; font-size: 28px; }
+    .number span { font-size: 12px; color: #65778b; }
+    .state {
+      padding: 14px;
+      background: #ecf5ff;
+      border-left: 4px solid #437ac3;
+      border-radius: 8px;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+    button {
+      background: #224f88;
+      color: #fff;
+      border: 0;
+      border-radius: 10px;
+      padding: 13px 19px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .55; cursor: wait; }
+    .timeline { margin-top: 20px; }
+    .step {
+      padding: 15px 0 15px 20px;
+      border-left: 3px solid #b8d1ee;
+      margin-left: 5px;
+    }
+    .step strong { display: block; font-size: 14px; }
+    .step p { margin: 6px 0 0; color: #65778b; font-size: 13px; }
+    .output { margin-top: 20px; overflow-wrap: anywhere; }
+    .output .step { border-color: #95c4ae; }
+
+
+
+    footer { margin-top: 28px; color: #6b7b8a; font-size: 12px; }
+    @media (max-width: 760px) {
+      .grid { grid-template-columns: 1fr; }
+      header { padding: 17px 22px; }
+      .panel { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">Patient Follow-up</div>
+    <div class="tag">FICTIONAL RESEARCH DEMO</div>
+  </header>
+
+  <main>
+    <div class="eyebrow">Doctor-supervised coordination</div>
+    <h1>From test results to clear next steps.</h1>
+    <p class="intro muted">
+      A simulated patient follow-up system with evidence-linked
+      AI investigation and clinician-controlled communication.
+      No real patients or medical decisions are involved.
+    </p>
+
+    <div class="grid">
+      <section class="panel">
+        <div class="eyebrow">Patient experience</div>
+        <h2>My follow-up</h2>
+        <p class="panel-note" id="patientCaseLabel">
+          CASE-001 — Active fictional missing-report example
+        </p>
+
+        <div class="numbers">
+          <div class="number">
+            <strong id="received">—</strong>
+            <span>Reports received</span>
+          </div>
+          <div class="number">
+            <strong id="ordered">—</strong>
+            <span>Reports ordered</span>
+          </div>
+          <div class="number">
+            <strong id="pending">—</strong>
+            <span>Reports pending</span>
+          </div>
+        </div>
+
+        <div class="state" id="patientState">
+          Loading patient status…
+        </div>
+        <p class="muted" id="patientMessage"></p>
+
+
+        <div class="output">
+          <button
+            id="acknowledgeUpdate"
+            type="button"
+            disabled
+           >
+            Acknowledge fictional update
+           </button>
+
+           <p id="patientAckFeedback" class="panel-note" role="status">
+             Acknowledgement becomes available after verified delivery.
+             This confirms message receipt only, not completion of care.
+           </p>
+         </div>
+
+
+        <p class="panel-note">
+          This is the unresolved report scenario used by our agent.
+          Investigation drafts do not complete reports or authorize
+          patient communication.
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="eyebrow">Staff investigation</div>
+        <h2 id="staffHeading">Investigate unresolved report</h2>
+        <p id="staffDescription" class="muted">
+           The shared fictional case has one unresolved test order.
+           Review the available laboratory evidence and use the
+           Vultr agent to prepare an administrative clarification.
+           Evidence alone cannot authorize report attachment.
+        </p>
+
+        <button id="runAgent" type="button">
+          Run Vultr AI investigation
+        </button>
+
+        <div class="output" id="evidenceReview" aria-live="polite">
+          Loading laboratory evidence…
+        </div>
+
+
+        <div class="output">
+          <p class="panel-note">
+            Fictional lab confirmation LABCONF-001 separately confirms
+            external reference EXT-771 for clinic order T-03.
+            This is simulated evidence, not a real laboratory response.
+          </p>
+
+          <button id="receiveConfirmedReport" type="button">
+            Simulate staff-verified report receipt
+          </button>
+
+          <p
+            id="staffActionFeedback"
+            class="panel-note"
+            role="status"
+          >
+            No staff confirmation recorded yet.
+          </p>
+        </div>
+
+
+        <div class="output">
+          <h2>Clinician review</h2>
+          <p class="panel-note">
+            Fictional clinician DOC-01 must separately authorize
+            the administrative follow-up instructions.
+            AI investigation alone cannot approve them.
+          </p>
+
+          <button id="approveFollowup" type="button" disabled>
+            Simulate clinician approval
+          </button>
+
+          <p id="clinicianFeedback" class="panel-note" role="status">
+            Waiting for all ordered reports.
+          </p>
+        </div>
+
+        <div class="output" aria-live="polite">
+          <div class="state" id="agentStatus">
+            Investigation not started
+          </div>
+          <div id="agentDetails"></div>
+        </div>
+      </section>
+    </div>
+
+
+      <div class="output">
+        <h2>Approved communication</h2>
+        <p class="panel-note">
+          These actions use the fictional notification outbox
+          and a simulated destination. They do not contact
+          a real patient.
+        </p>
+
+        <button id="queueUpdate" type="button" disabled>
+          Queue approved update
+        </button>
+
+        <button id="deliverUpdate" type="button" disabled>
+          Verify fictional delivery
+        </button>
+
+        <p id="deliveryFeedback" class="panel-note" role="status">
+          Waiting for clinician approval.
+        </p>
+      </div>
+
+
+    <section class="panel timeline">
+      <div class="eyebrow">Persistent case history</div>
+      <h2>Audited follow-up timeline</h2>
+      <p class="panel-note">
+        Events retrieved from the active fictional case database.
+        Historical actions are shown seperately from current status.
+      </p>
+      <div id="timeline">Loading timeline…</div>
+    </section>
+
+
+<section class="panel timeline">
+      <div class="eyebrow">Research provenance</div>
+      <h2>Real-world data structures, synthetic records</h2>
+
+      <p class="panel-note">
+        Aggregate audit of a Synthea-generated FHIR bulk export.
+        This is separate from fictional workflow CASE-001.
+      </p>
+
+      <div id="researchEvidence" aria-live="polite">
+       Loading research evidence…
+      </div>
+
+      <p class="panel-note">
+        Source:
+        <a
+          href="https://github.com/smart-on-fhir/sample-bulk-fhir-datasets"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          SMART on FHIR sample bulk datasets
+        </a>
+      </p>
+    </section>
+
+<footer>
+      Research prototype · Synthetic workflow · No diagnosis,
+      treatment recommendations or real patient notifications.
+      Local development use only.
+    </footer>
+  </main>
+
+  <script>
+    const byId = (id) => document.getElementById(id);
+
+    async function readJSON(url, options) {
+      const response = await fetch(url, options);
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(
+          typeof body.detail === "string"
+            ? body.detail
+            : `Request failed: HTTP ${response.status}`
+        );
+      }
+
+      return response.json();
+    }
+
+    function addStep(parent, heading, description) {
+      const row = document.createElement("div");
+      row.className = "step";
+
+      const title = document.createElement("strong");
+      title.textContent = heading;
+
+      const body = document.createElement("p");
+      body.textContent = description;
+
+      row.append(title, body);
+      parent.appendChild(row);
+    }
+
+
+function updateWorkflowDescriptions(status) {
+  const state = status.state;
+
+  const descriptions = {
+    AWAITING_REPORTS: {
+      heading: "Investigate unresolved report",
+      description:
+        "One fictional report remains pending. Review the " +
+        "laboratory evidence and investigate the uncertain " +
+        "reference using Vultr AI.",
+      patient: "Active fictional missing-report case"
+    },
+    AWAITING_CLINICIAN_REVIEW: {
+      heading: "Clinician review required",
+      description:
+        "All ordered reports have been received. " +
+        "A simulated clinician must review the case " +
+        "before communication is authorized.",
+      patient: "Fictional case awaiting clinician review"
+    },
+    APPROVED_FOR_COMMUNICATION: {
+      heading: "Prepare approved follow-up",
+      description:
+        "Fictional clinician approval is recorded. " +
+        "The clinic may now queue the exact approved message.",
+      patient: "Fictional case with approved instructions"
+    },
+    DELIVERY_UNCONFIRMED: {
+      heading: "Notification pending",
+      description:
+        "The approved fictional notification is queued. " +
+        "Delivery has not been verified.",
+      patient: "Fictional case awaiting delivery verification"
+    },
+    DELIVERED: {
+      heading: "Delivery verified",
+      description:
+        "The fictional destination confirmed delivery. " +
+        "Patient acknowledgement has not yet been recorded.",
+      patient: "Fictional case with verified delivery"
+    },
+    ACKNOWLEDGED: {
+      heading: "Follow-up update acknowledged",
+      description:
+        "The fictional patient acknowledged receiving " +
+        "the update. This does not confirm completion " +
+        "of clinical follow-up.",
+      patient: "Fictional case with receipt acknowledged"
+    }
+  };
+
+  const current = descriptions[state];
+
+  if (!current) return;
+
+  byId("staffHeading").textContent = current.heading;
+  byId("staffDescription").textContent = current.description;
+  byId("patientCaseLabel").textContent =
+    "CASE-001 — " + current.patient;
+}
+
+
+    async function loadPatientView() {
+      try {
+        const [status, journey] = await Promise.all([
+          readJSON("/demo/active-case/status"),
+          readJSON("/demo/active-case/timeline")
+        ]);
+
+        byId("received").textContent = status.received_count;
+        byId("ordered").textContent = status.ordered_count;
+        byId("pending").textContent = status.pending_count;
+        byId("patientState").textContent =
+          status.state.replaceAll("_", " ");
+        byId("patientMessage").textContent = status.message;
+          updateWorkflowDescriptions(status);
+        byId("approveFollowup").disabled =
+          status.state !== "AWAITING_CLINICIAN_REVIEW";
+        byId("queueUpdate").disabled =
+          status.state !== "APPROVED_FOR_COMMUNICATION";
+
+        byId("acknowledgeUpdate").disabled =
+          status.state !== "DELIVERED";
+
+        if (status.state === "ACKNOWLEDGED") {
+          byId("patientAckFeedback").textContent =
+            "Fictional patient acknowledgement recorded. " +
+            "This does not mean clinical follow-up is complete.";
+        }
+
+        byId("deliverUpdate").disabled =
+          status.state !== "DELIVERY_UNCONFIRMED";
+
+        const hasPendingReport = status.pending_count > 0;
+
+        byId("receiveConfirmedReport").disabled = !hasPendingReport;
+        byId("runAgent").disabled = !hasPendingReport;
+
+        if (!hasPendingReport) {
+          byId("staffActionFeedback").textContent =
+            "All fictional reports received.";
+        }
+
+        const timeline = byId("timeline");
+        timeline.replaceChildren();
+
+
+        if (journey.events.length === 0) {
+          addStep(
+            timeline,
+            "No recorded actions yet",
+            journey.baseline_note
+          );
+        } else {
+          addStep(
+            timeline,
+            "Initial fictional case",
+            journey.baseline_note
+          );
+
+          journey.events.forEach((event) => {
+            addStep(
+              timeline,
+              event.title,
+              event.detail +
+              " Recorded: " + event.occurred_at +
+              " UTC. Source: " + event.source
+            );
+          });
+        }
+
+        if (journey.notification_snapshot) {
+          addStep(
+            timeline,
+            "Current notification status",
+            "Notification " +
+            journey.notification_snapshot.notification_id +
+            " is currently " +
+            journey.notification_snapshot.status +
+            ". " + journey.delivery_timing_note
+          );
+        }
+
+        } catch (error) {
+        byId("patientState").textContent = "Data unavailable";
+        byId("patientMessage").textContent = error.message;
+        byId("timeline").textContent =
+          "Unable to load the fictional journey.";
+      }
+    }
+
+        byId("approveFollowup").addEventListener(
+          "click",
+          approveFictionalFollowup
+        );
+
+    async function loadEvidenceReview() {
+      const panel = byId("evidenceReview");
+
+      try {
+        const packet = await readJSON(
+          "/demo/staff/review",
+          {
+            headers: {
+              "X-Demo-Confirmation": "yes"
+            }
+          }
+        );
+
+        panel.replaceChildren();
+
+
+        if (packet.pending_orders.length === 0) {
+          addStep(
+            panel,
+            "All reports received",
+            "No pending clinic orders remain. " +
+            "Check the patient panel for the latest approval, " +
+            "delivery and acknowledgement state."
+          );
+          return;
+        }
+
+        addStep(
+          panel,
+          "Evidence review — case version " + packet.case_version,
+          "Read-only fictional laboratory records"
+        );
+
+        for (const order of packet.pending_orders) {
+          addStep(
+            panel,
+            "Pending clinic order: " + order.order_id,
+            "Test code: " + order.test_code
+          );
+
+          if (order.candidates.length === 0) {
+            addStep(
+              panel,
+              "No eligible laboratory candidate",
+              "The clinic must investigate the missing report."
+            );
+          }
+
+          for (const candidate of order.candidates) {
+            addStep(
+              panel,
+              "Lab evidence: " + candidate.source_id,
+              "External reference: " +
+              candidate.external_reference +
+              ". Order reference matches: " +
+              (candidate.order_reference_matches ? "Yes" : "No") +
+              ". Staff verification required."
+            );
+
+            for (const message of candidate.messages) {
+              addStep(
+                panel,
+                "Untrusted lab message: " + message.source_id,
+                message.body
+              );
+            }
+          }
+
+          if (order.withheld_patient_mismatch_count > 0) {
+            addStep(
+              panel,
+              "Patient-reference safeguard",
+              order.withheld_patient_mismatch_count +
+              " mismatched-patient candidate(s) withheld."
+            );
+          }
+        }
+
+      } catch (error) {
+        panel.textContent =
+          "Evidence unavailable: " + error.message;
+      }
+    }
+
+
+async function receiveConfirmedReport() {
+  const button = byId("receiveConfirmedReport");
+  const feedback = byId("staffActionFeedback");
+
+  const approved = window.confirm(
+    "FICTIONAL DEMO ONLY\n\n" +
+    "Record simulated independent laboratory confirmation " +
+    "LABCONF-001 for clinic order T-03?\n\n" +
+    "This will add the third fictional report and require " +
+    "a separate clinician review. It will not send a message.\n\n" +
+    "This change persists in the local demo database."
+  );
+
+  if (!approved) return;
+
+  button.disabled = true;
+  feedback.textContent = "Recording fictional report receipt…";
+
+  let completed = false;
+
+  try {
+    const current = await readJSON(
+      "/demo/active-case/status"
+    );
+
+    if (
+      current.case_version !== 1 ||
+      current.state !== "AWAITING_REPORTS" ||
+      current.pending_count !== 1
+    ) {
+      throw new Error(
+        "The fictional case is no longer in its initial pending state."
+      );
+    }
+
+    const result = await readJSON(
+      "/demo/staff/receive-confirmed-report",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Demo-Confirmation": "yes"
+        },
+        body: JSON.stringify({
+          confirmation_id: "LABCONF-001",
+          expected_version: current.case_version,
+          staff_attested: true
+        })
+      }
+    );
+
+    completed = true;
+
+    feedback.textContent =
+      "Fictional report " + result.report_id +
+      " received. Case version " + result.case_version +
+      ". Clinician review is now required.";
+
+    await Promise.all([
+      loadPatientView(),
+      loadEvidenceReview()
+    ]);
+
+    byId("agentStatus").textContent =
+      "Earlier investigation completed; clinician review pending.";
+
+    byId("agentDetails").replaceChildren();
+
+  } catch (error) {
+    feedback.textContent =
+      "Report receipt not completed: " + error.message;
+  } finally {
+    if (!completed) {
+      button.disabled = false;
+    }
+  }
+}
+
+async function approveFictionalFollowup() {
+  const button = byId("approveFollowup");
+  const feedback = byId("clinicianFeedback");
+
+  if (!window.confirm(
+    "FICTIONAL DEMO ONLY\n\n" +
+    "Simulate clinician DOC-01 approving the " +
+    "administrative follow-up instructions?\n\n" +
+    "This does not send a patient notification."
+  )) return;
+
+  button.disabled = true;
+  feedback.textContent =
+    "Recording simulated clinician approval…";
+
+  try {
+    const current = await readJSON(
+      "/demo/active-case/status"
+    );
+
+    if (current.state !== "AWAITING_CLINICIAN_REVIEW") {
+      throw new Error(
+        "This case is not awaiting clinician review."
+      );
+    }
+
+    const result = await readJSON(
+      "/demo/clinician/approve",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Demo-Confirmation": "yes"
+        },
+        body: JSON.stringify({
+          expected_version: current.case_version,
+          clinician_attested: true
+        })
+      }
+    );
+
+    feedback.textContent =
+      "Fictional clinician approval recorded. " +
+      "No patient notification has been sent.";
+
+    await loadPatientView();
+
+  } catch (error) {
+    feedback.textContent =
+      "Approval not completed: " + error.message;
+    button.disabled = false;
+  }
+}
+
+
+async function runCommunicationAction(
+  endpoint,
+  requiredState,
+  confirmationText
+) {
+  if (!window.confirm(confirmationText)) return;
+
+  const feedback = byId("deliveryFeedback");
+  feedback.textContent = "Processing fictional communication…";
+
+  try {
+    const current = await readJSON(
+      "/demo/active-case/status"
+    );
+
+    if (current.state !== requiredState) {
+      throw new Error(
+        "The case is not in the required workflow state."
+      );
+    }
+
+    const result = await readJSON(
+      endpoint,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Demo-Confirmation": "yes"
+        },
+        body: JSON.stringify({
+          expected_version: current.case_version
+        })
+      }
+    );
+
+    feedback.textContent =
+      "Fictional communication action completed: " +
+      result.action;
+
+  } catch (error) {
+    feedback.textContent =
+      "Action not completed: " + error.message;
+  } finally {
+    await loadPatientView();
+  }
+}
+
+
+async function queueApprovedUpdate() {
+  await runCommunicationAction(
+    "/demo/clinic/queue-notification",
+    "APPROVED_FOR_COMMUNICATION",
+    "Queue the clinician-approved fictional update?\n\n" +
+    "This does not mean delivery was successful."
+  );
+}
+
+
+async function verifyFictionalDelivery() {
+  await runCommunicationAction(
+    "/demo/clinic/deliver-notification",
+    "DELIVERY_UNCONFIRMED",
+    "Send the approved update to the fictional destination " +
+    "and verify its receipt?\n\n" +
+    "No real patient will be contacted."
+  );
+}
+
+
+async function acknowledgeFictionalUpdate() {
+  const button = byId("acknowledgeUpdate");
+  const feedback = byId("patientAckFeedback");
+
+  if (!window.confirm(
+    "FICTIONAL PATIENT ACTION\n\n" +
+    "Acknowledge receipt of the clinician-approved update?\n\n" +
+    "This does not confirm that any medical follow-up " +
+    "has been completed."
+  )) return;
+
+  button.disabled = true;
+
+  try {
+    const current = await readJSON(
+      "/demo/active-case/status"
+    );
+
+    if (current.state !== "DELIVERED") {
+      throw new Error(
+        "The notification has not reached the delivered state."
+      );
+    }
+
+    await readJSON(
+      "/demo/patient/acknowledge",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Demo-Confirmation": "yes"
+        },
+        body: JSON.stringify({
+          expected_version: current.case_version,
+          patient_attested: true
+        })
+      }
+    );
+
+    feedback.textContent =
+      "Fictional patient receipt acknowledgement recorded.";
+
+  } catch (error) {
+    feedback.textContent =
+      "Acknowledgement not recorded: " + error.message;
+  } finally {
+    await loadPatientView();
+  }
+}
+
+
+async function loadResearchEvidence() {
+  const panel = byId("researchEvidence");
+
+  try {
+    const data = await readJSON("/demo/research/synthea");
+
+    panel.replaceChildren();
+
+    const c = data.resource_counts;
+    const r = data.relationship_checks;
+
+    addStep(
+      panel,
+      "Synthetic FHIR resource profile",
+      c.Patient + " Patient resource entries · " +
+      c.ServiceRequest + " ServiceRequests · " +
+      c.DiagnosticReport + " DiagnosticReports · " +
+      c.Observation + " Observations"
+    );
+
+    addStep(
+      panel,
+      "Audited report relationships",
+      r.patient_linked + " of " + r.reports +
+      " reports have patient linkage. " +
+      r.order_linked + " of " + r.reports +
+      " have explicit order linkage in our audit."
+    );
+
+    addStep(
+      panel,
+      "Research interpretation",
+      data.interpretation
+    );
+
+    addStep(
+      panel,
+      "Data provenance",
+      "Source archive SHA-256: " + data.archive_sha256
+    );
+
+  } catch (error) {
+    panel.textContent =
+      "Research summary unavailable: " + error.message;
+  }
+}
+
+    async function runInvestigation() {
+      const button = byId("runAgent");
+      const status = byId("agentStatus");
+      const details = byId("agentDetails");
+
+      button.disabled = true;
+      button.textContent = "Investigating…";
+      status.textContent = "Running model-selected tools…";
+      details.replaceChildren();
+
+      try {
+        const result = await readJSON(
+          "/demo/agent/investigate",
+          {
+            method: "POST",
+            headers: {
+              "X-Demo-Confirmation": "yes"
+            }
+          }
+        );
+
+        status.textContent = result.status.replaceAll("_", " ");
+
+        addStep(
+          details,
+          "Model",
+          result.model
+        );
+
+        result.tool_sequence.forEach((tool, index) => {
+          addStep(
+            details,
+            `Tool ${index + 1}: ${tool}`,
+            "Executed within the fictional case scope"
+          );
+        });
+
+        result.staff_drafts.forEach((draft, index) => {
+          addStep(
+            details,
+            `Staff draft ${index + 1}: ${draft.action}`,
+            draft.draft
+          );
+          addStep(
+            details,
+            "Evidence references",
+            draft.evidence_source_ids.join(", ") || "None available"
+          );
+        });
+
+        addStep(
+          details,
+          "Case integrity",
+          result.case_unchanged
+            ? "Original fictional case unchanged"
+            : "Case integrity check failed"
+        );
+      } catch (error) {
+        status.textContent = "Investigation unavailable";
+        addStep(details, "Error", error.message);
+      } finally {
+        button.disabled = false;
+        button.textContent = "Run Vultr AI investigation";
+      }
+    }
+
+    byId("runAgent").addEventListener(
+      "click",
+      runInvestigation
+    );
+
+    byId("receiveConfirmedReport").addEventListener(
+      "click",
+      receiveConfirmedReport
+    );
+
+    byId("approveFollowup").addEventListener(
+      "click",
+      approveFictionalFollowup
+    );
+
+    byId("queueUpdate").addEventListener(
+      "click",
+      queueApprovedUpdate
+    );
+
+    byId("deliverUpdate").addEventListener(
+      "click",
+      verifyFictionalDelivery
+    );
+
+    byId("acknowledgeUpdate").addEventListener(
+      "click",
+      acknowledgeFictionalUpdate
+    );
+
+    loadPatientView();
+    loadEvidenceReview();
+    loadResearchEvidence();
+  </script>
+</body>
+</html>

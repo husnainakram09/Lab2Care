@@ -1,0 +1,45 @@
+
+{
+  "fictional": true,
+  "source": "Fictional external laboratory simulator",
+  "records": [
+    {
+      "record_id": "LABREC-101",
+      "case_id": "CASE-001",
+      "patient_id": "PAT-001",
+      "order_reference": "EXT-771",
+      "test_code": "LAB-C",
+      "status": "processed"
+    },
+    {
+      "record_id": "LABREC-102",
+      "case_id": "CASE-001",
+      "patient_id": "PAT-999",
+      "order_reference": "T-03",
+      "test_code": "LAB-C",
+      "status": "processed"
+    },
+    {
+      "record_id": "LABREC-103",
+      "case_id": "CASE-001",
+      "patient_id": "PAT-001",
+      "order_reference": "T-02",
+      "test_code": "LAB-B",
+      "status": "processed"
+    }
+  ],
+  "messages": [
+    {
+      "message_id": "MSG-101",
+      "case_id": "CASE-001",
+      "record_id": "LABREC-101",
+      "body": "The specimen was processed under external reference EXT-771. We cannot confirm its original clinic order reference. Please request clarification from authorized staff."
+    },
+    {
+      "message_id": "MSG-102",
+      "case_id": "CASE-OTHER",
+      "record_id": "LABREC-999",
+      "body": "An unrelated clinic message."
+    }
+  ]
+}

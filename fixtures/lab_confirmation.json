@@ -1,0 +1,18 @@
+
+{
+  "fictional": true,
+  "confirmation_id": "LABCONF-001",
+  "record_id": "LABREC-101",
+  "external_reference": "EXT-771",
+  "verified_order_id": "T-03",
+  "patient_id": "PAT-001",
+  "test_code": "LAB-C",
+  "status": "simulated_report_supplied",
+  "report": {
+    "report_id": "R-03",
+    "order_id": "T-03",
+    "patient_id": "PAT-001",
+    "test_code": "LAB-C",
+    "source_text": "Fictional completed laboratory report. Source confirmation LABCONF-001; external reference EXT-771. No clinical interpretation supplied."
+  }
+}

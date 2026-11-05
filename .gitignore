@@ -1,0 +1,21 @@
+
+/runtime/
+/.venv/
+/research/data/
+
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Local outputs
+*.log
+.DS_Store
