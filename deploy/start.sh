@@ -9,6 +9,7 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 export FOLLOWUP_ENABLE_LOCAL_AGENT=1
+export FOLLOWUP_DEMO_DB="runtime/active/clinic.db"
 
 if [[ -z "${VULTR_SERVERLESS_INFERENCE_API_KEY:-}" ]]; then
     echo "ERROR: Vultr inference API key is missing."
