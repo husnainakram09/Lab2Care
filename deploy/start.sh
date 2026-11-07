@@ -33,7 +33,7 @@ if [[ ! -f runtime/active/clinic.db ]]; then
     exit 1
 fi
 
-echo "Starting complete Patient Follow-up application."
+echo "Starting complete Lab2Care application."
 echo "Model: ${VULTR_MODEL}"
 echo "Backend: http://127.0.0.1:${FOLLOWUP_PORT:-8000}"
 echo "Data mode: fictional"

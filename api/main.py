@@ -27,7 +27,7 @@ def create_app(db_path, timeline_path=None):
     )
 
     app = FastAPI(
-        title="Patient Follow-up Agent - Fictional Demo",
+        title="Lab2Care - Fictional Demo",
         version="0.1.0",
     )
 
@@ -45,7 +45,7 @@ def create_app(db_path, timeline_path=None):
             )
 
         return {
-            "service": "patient-followup",
+            "service": "lab2care",
             "status": "ok",
             "data_mode": "fictional",
         }
