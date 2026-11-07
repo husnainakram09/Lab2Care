@@ -12,6 +12,20 @@ from datetime import datetime, timezone
 from storage.repository import get_case
 
 
+def _utc_seconds(raw):
+    if raw is None:
+        return None
+
+    parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+
+    return parsed.astimezone(timezone.utc).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+
 def build_case_timeline(db_path, case_id="CASE-001"):
     case = get_case(db_path, case_id)
 
@@ -139,27 +153,14 @@ def build_case_timeline(db_path, case_id="CASE-001"):
                 "_rank": 4,
             })
 
+    # Tables store ISO-8601 'Z' and SQLite CURRENT_TIMESTAMP
+    # formats. Present both as one UTC format.
+    for event in events:
+        event["occurred_at"] = _utc_seconds(event["occurred_at"])
+
     def event_sort_key(event):
-        raw = event["occurred_at"]
-
-        if raw is None:
-            timestamp = "9999-12-31 23:59:59"
-        else:
-            parsed = datetime.fromisoformat(
-                raw.replace("Z", "+00:00")
-            )
-
-            if parsed.tzinfo is None:
-                parsed = parsed.replace(
-                    tzinfo=timezone.utc
-                )
-
-            timestamp = parsed.astimezone(
-                timezone.utc
-            ).strftime("%Y-%m-%d %H:%M:%S")
-
         return (
-            timestamp,
+            event["occurred_at"] or "9999-12-31 23:59:59",
             event["case_version"],
             event["_rank"],
             event["source"],

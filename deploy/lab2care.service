@@ -1,0 +1,25 @@
+# systemd unit for the fictional follow-up demo.
+# Install: sudo cp deploy/lab2care.service /etc/systemd/system/
+# Expects the app in /home/lab2care/Lab2Care and secrets in
+# /etc/lab2care.env (root-only; systemd reads it before starting).
+
+[Unit]
+Description=Lab2Care fictional patient follow-up demo
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=lab2care
+Group=lab2care
+WorkingDirectory=/home/lab2care/Lab2Care
+EnvironmentFile=/etc/lab2care.env
+Environment=PATH=/home/lab2care/Lab2Care/.venv/bin:/usr/bin:/bin
+ExecStart=/home/lab2care/Lab2Care/deploy/start.sh
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

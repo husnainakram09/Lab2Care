@@ -60,14 +60,9 @@ Passing synthetic tests does not establish clinical safety or production securit
 
 ## Run the local application
 
-To enable the Vultr AI investigation, configure these variables in your local shell:
+Copy `.env.example` to `.env` and set `VULTR_SERVERLESS_INFERENCE_API_KEY` to enable the Vultr AI investigation. The application reads `.env` at startup; variables already set in the environment take precedence. `.env` is ignored by Git. Do not commit the key or place it in frontend code. Confirm that the selected model remains available in your Vultr account.
 
-```bash
-export FOLLOWUP_ENABLE_LOCAL_AGENT=1
-export VULTR_MODEL="deepseek-v4.1-flash-1017"
-```
-
-Set `VULTR_SERVERLESS_INFERENCE_API_KEY` securely in the environment. Do not commit the key or place it in frontend code. Confirm that the selected model remains available in your Vultr account.
+Alternatively, set the same variables (`FOLLOWUP_ENABLE_LOCAL_AGENT=1`, `VULTR_MODEL`, `VULTR_SERVERLESS_INFERENCE_API_KEY`) directly in your shell.
 
 Start the development server:
 
@@ -98,7 +93,28 @@ The six patient-facing states are:
 
 Acknowledgement records message receipt only, not completion of clinical care.
 
+## Shared and guest modes
+
+By default the application serves one shared fictional case, intended for a single local developer. Changes to it are accepted only from the local machine.
+
+A public deployment must set `FOLLOWUP_GUEST_SESSIONS=1` (as `deploy/start.sh` does). Each browser then receives a private copy of the fictional case through an HttpOnly cookie, so no visitor can complete or change the demonstration for anyone else. Visitors can use **Start over** to get a fresh case. Guest cases are stored under `runtime/sessions/`, expire 24 hours after their last change, and the oldest are removed beyond `FOLLOWUP_MAX_GUEST_SESSIONS` (default 300).
+
+Behind a reverse proxy every request appears to come from the local machine, which is why the shared case must not be served publicly.
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `FOLLOWUP_GUEST_SESSIONS` | `1` gives each visitor a private case | shared case |
+| `FOLLOWUP_SECURE_COOKIES` | `1` marks the session cookie HTTPS-only | off |
+| `FOLLOWUP_MAX_GUEST_SESSIONS` | Maximum stored guest cases | 300 |
+| `FOLLOWUP_AI_RUNS_PER_SESSION_HOUR` | AI investigations per case per hour | 5 |
+| `FOLLOWUP_AI_RUNS_PER_HOUR` | AI investigations per hour, all visitors | 60 |
+| `FOLLOWUP_AI_MAX_CONCURRENT` | Simultaneous AI investigations | 2 |
+
+The hourly AI limit for all visitors is the hard bound on inference spending, because a visitor can discard their cookie to start a new case. The limits apply per Uvicorn process; the deployment runs one worker.
+
 ## Reset the demonstration
+
+In guest mode, visitors reset their own case with **Start over**. The steps below reset the shared case.
 
 Stop Uvicorn before resetting.
 
@@ -129,9 +145,9 @@ Research summaries retain source provenance and archive checksums.
 
 **LOCAL DEVELOPMENT ONLY.**
 
-Do not expose `api.dev_main:app` directly to the public internet.
+Do not expose `api.dev_main:app` directly to the public internet, and never serve the shared case publicly. A public deployment must run in guest mode behind an HTTPS reverse proxy.
 
-Local confirmation headers and fixed fictional actor identifiers are not authentication. The public version requires separate access controls, session isolation, inference usage limits, and security review.
+Guest sessions isolate fictional demo state; they are not authentication. Confirmation headers and fixed fictional actor identifiers do not identify real people. Any use beyond a fictional demonstration requires real access controls and a security review.
 
 No real patients, real clinical decisions, real laboratory communications, or real notification services are involved.
 

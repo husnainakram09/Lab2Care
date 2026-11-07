@@ -5,13 +5,14 @@ that this isolated test destination recorded the message.
 """
 
 import sqlite3
+from contextlib import closing
 
 
 class FakeNotificationGateway:
     def __init__(self, db_path):
         self.db_path = str(db_path)
 
-        with sqlite3.connect(self.db_path) as db:
+        with closing(sqlite3.connect(self.db_path)) as db, db:
             db.execute("""
                 CREATE TABLE IF NOT EXISTS deliveries (
                     idempotency_key TEXT PRIMARY KEY,
@@ -28,7 +29,7 @@ class FakeNotificationGateway:
         if not isinstance(body, str) or not body.strip():
             raise ValueError("Message body is required")
 
-        with sqlite3.connect(self.db_path) as db:
+        with closing(sqlite3.connect(self.db_path)) as db, db:
             db.execute("BEGIN IMMEDIATE")
 
             previous = db.execute(
@@ -70,7 +71,7 @@ class FakeNotificationGateway:
     def lookup(self, key):
         """Read the destination's authoritative test receipt."""
 
-        with sqlite3.connect(self.db_path) as db:
+        with closing(sqlite3.connect(self.db_path)) as db:
             row = db.execute(
                 """
                 SELECT idempotency_key, body, status
@@ -90,7 +91,7 @@ class FakeNotificationGateway:
         }
 
     def delivery_count(self):
-        with sqlite3.connect(self.db_path) as db:
+        with closing(sqlite3.connect(self.db_path)) as db:
             return db.execute(
                 "SELECT COUNT(*) FROM deliveries"
             ).fetchone()[0]

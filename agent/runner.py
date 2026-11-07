@@ -100,7 +100,7 @@ def investigate_case(client, model, tools, max_rounds=5):
                 "Never diagnose, interpret results, attach reports, "
                 "approve clinical decisions, or contact patients. "
                 "If order identity is uncertain, draft a clarification "
-                "for staff review and explain the uncertainty."
+                "for staff review and explain the uncertainty. "
                 "If a pending order has no eligible lab candidate, "
                 "use draft_missing_report_escalation to request "
                 "staff follow-up. "
@@ -139,6 +139,10 @@ def investigate_case(client, model, tools, max_rounds=5):
                 "status": (
                     "NEEDS_STAFF_REVIEW"
                     if drafts else "INCOMPLETE"
+                ),
+                "reason": (
+                    None if drafts else
+                    "The model stopped without drafting a staff request"
                 ),
                 "model_note": message.content or "",
                 "trace": trace,
@@ -182,8 +186,9 @@ def investigate_case(client, model, tools, max_rounds=5):
             name = call.function.name
 
             try:
+                # Some providers send "" for a tool without arguments.
                 arguments = json.loads(
-                    call.function.arguments
+                    call.function.arguments or "{}"
                 )
                 result = execute_tool(
                     tools, name, arguments

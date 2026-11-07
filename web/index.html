@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Patient Follow-up | Fictional Demo</title>
+  <link rel="icon" href="data:,">
   <style>
     :root {
       font-family: Inter, system-ui, sans-serif;
@@ -92,7 +93,34 @@
       margin-left: 5px;
     }
     .step strong { display: block; font-size: 14px; }
-    .step p { margin: 6px 0 0; color: #65778b; font-size: 13px; }
+    .step p {
+      margin: 6px 0 0;
+      color: #65778b;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .session-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: #fff;
+      border: 1px solid #e0e6ee;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .session-bar[hidden] { display: none; }
+    .session-bar p { margin: 0; }
+    button.secondary {
+      background: #fff;
+      color: #224f88;
+      border: 1px solid #b8cbe3;
+      padding: 9px 14px;
+    }
     .output { margin-top: 20px; overflow-wrap: anywhere; }
     .output .step { border-color: #95c4ae; }
 
@@ -120,6 +148,16 @@
       AI investigation and clinician-controlled communication.
       No real patients or medical decisions are involved.
     </p>
+
+    <div class="session-bar" id="sessionBar" hidden>
+      <p id="sessionFeedback" role="status">
+        You have a private copy of this fictional case.
+        Your actions do not affect other visitors.
+      </p>
+      <button id="restartCase" type="button" class="secondary">
+        Start over
+      </button>
+    </div>
 
     <div class="grid">
       <section class="panel">
@@ -187,6 +225,13 @@
           Run Vultr AI investigation
         </button>
 
+        <div class="output" aria-live="polite">
+          <div class="state" id="agentStatus">
+            Investigation not started
+          </div>
+          <div id="agentDetails"></div>
+        </div>
+
         <div class="output" id="evidenceReview" aria-live="polite">
           Loading laboratory evidence…
         </div>
@@ -229,25 +274,20 @@
             Waiting for all ordered reports.
           </p>
         </div>
-
-        <div class="output" aria-live="polite">
-          <div class="state" id="agentStatus">
-            Investigation not started
-          </div>
-          <div id="agentDetails"></div>
-        </div>
       </section>
     </div>
 
 
-      <div class="output">
-        <h2>Approved communication</h2>
-        <p class="panel-note">
-          These actions use the fictional notification outbox
-          and a simulated destination. They do not contact
-          a real patient.
-        </p>
+    <section class="panel timeline">
+      <div class="eyebrow">Clinic communication</div>
+      <h2>Approved communication</h2>
+      <p class="panel-note">
+        These actions use the fictional notification outbox
+        and a simulated destination. They do not contact
+        a real patient.
+      </p>
 
+      <div class="actions">
         <button id="queueUpdate" type="button" disabled>
           Queue approved update
         </button>
@@ -255,11 +295,12 @@
         <button id="deliverUpdate" type="button" disabled>
           Verify fictional delivery
         </button>
-
-        <p id="deliveryFeedback" class="panel-note" role="status">
-          Waiting for clinician approval.
-        </p>
       </div>
+
+      <p id="deliveryFeedback" class="panel-note" role="status">
+        Waiting for clinician approval.
+      </p>
+    </section>
 
 
     <section class="panel timeline">
@@ -267,7 +308,7 @@
       <h2>Audited follow-up timeline</h2>
       <p class="panel-note">
         Events retrieved from the active fictional case database.
-        Historical actions are shown seperately from current status.
+        Historical actions are shown separately from current status.
       </p>
       <div id="timeline">Loading timeline…</div>
     </section>
@@ -301,7 +342,6 @@
 <footer>
       Research prototype · Synthetic workflow · No diagnosis,
       treatment recommendations or real patient notifications.
-      Local development use only.
     </footer>
   </main>
 
@@ -372,6 +412,13 @@ function updateWorkflowDescriptions(status) {
         "Delivery has not been verified.",
       patient: "Fictional case awaiting delivery verification"
     },
+    DELIVERY_FAILED: {
+      heading: "Delivery not authorized",
+      description:
+        "The queued fictional notification can no longer be sent " +
+        "under its approval. Clinic staff must follow up.",
+      patient: "Fictional case needing staff follow-up"
+    },
     DELIVERED: {
       heading: "Delivery verified",
       description:
@@ -400,6 +447,96 @@ function updateWorkflowDescriptions(status) {
 }
 
 
+// Status lines are derived from the persisted case so a fresh
+// page load never shows text from an earlier workflow stage.
+const REPORTS_RECEIVED = "All fictional reports received.";
+const APPROVAL_RECORDED =
+  "Fictional clinician approval recorded. " +
+  "Approval alone does not send a patient notification.";
+const AWAITING_APPROVAL = "Waiting for clinician approval.";
+
+const ACTION_FEEDBACK = {
+  AWAITING_REPORTS: {
+    staff: "No staff confirmation recorded yet.",
+    clinician: "Waiting for all ordered reports.",
+    delivery: AWAITING_APPROVAL
+  },
+  STAFF_REVIEW_REQUIRED: {
+    staff: "A report detail needs staff review before it is accepted.",
+    clinician: "Waiting for staff review of a report detail.",
+    delivery: AWAITING_APPROVAL
+  },
+  AWAITING_CLINICIAN_REVIEW: {
+    staff: REPORTS_RECEIVED,
+    clinician: "All reports received. Ready for simulated clinician review.",
+    delivery: AWAITING_APPROVAL
+  },
+  APPROVED_FOR_COMMUNICATION: {
+    staff: REPORTS_RECEIVED,
+    clinician: APPROVAL_RECORDED,
+    delivery: "The approved update is ready to queue."
+  },
+  DELIVERY_UNCONFIRMED: {
+    staff: REPORTS_RECEIVED,
+    clinician: APPROVAL_RECORDED,
+    delivery:
+      "Update queued. Delivery to the fictional destination " +
+      "has not been verified yet."
+  },
+  DELIVERY_FAILED: {
+    staff: REPORTS_RECEIVED,
+    clinician: APPROVAL_RECORDED,
+    delivery:
+      "Delivery could not be confirmed. Clinic staff must follow up."
+  },
+  DELIVERED: {
+    staff: REPORTS_RECEIVED,
+    clinician: APPROVAL_RECORDED,
+    delivery: "The fictional destination confirmed delivery."
+  },
+  ACKNOWLEDGED: {
+    staff: REPORTS_RECEIVED,
+    clinician: APPROVAL_RECORDED,
+    delivery:
+      "Delivery confirmed, and the fictional patient " +
+      "acknowledged receipt."
+  }
+};
+
+const PATIENT_ACK_FEEDBACK = {
+  DELIVERED:
+    "Delivery verified. Acknowledge to confirm receipt. " +
+    "This confirms message receipt only, not completion of care.",
+  ACKNOWLEDGED:
+    "Fictional patient acknowledgement recorded. " +
+    "This does not mean clinical follow-up is complete."
+};
+
+const PATIENT_ACK_DEFAULT =
+  "Acknowledgement becomes available after verified delivery. " +
+  "This confirms message receipt only, not completion of care.";
+
+function updateActionFeedback(status) {
+  const current = ACTION_FEEDBACK[status.state];
+
+  if (current) {
+    byId("staffActionFeedback").textContent = current.staff;
+    byId("clinicianFeedback").textContent = current.clinician;
+    byId("deliveryFeedback").textContent = current.delivery;
+  }
+
+  byId("patientAckFeedback").textContent =
+    PATIENT_ACK_FEEDBACK[status.state] || PATIENT_ACK_DEFAULT;
+
+  if (status.pending_count === 0) {
+    byId("agentStatus").textContent =
+      "All ordered reports received. No investigation is needed.";
+  }
+}
+
+
+    let latestStatus = null;
+
     async function loadPatientView() {
       try {
         const [status, journey] = await Promise.all([
@@ -413,7 +550,12 @@ function updateWorkflowDescriptions(status) {
         byId("patientState").textContent =
           status.state.replaceAll("_", " ");
         byId("patientMessage").textContent = status.message;
-          updateWorkflowDescriptions(status);
+        updateWorkflowDescriptions(status);
+        updateActionFeedback(status);
+        latestStatus = status;
+
+        byId("sessionBar").hidden = status.session_mode !== "guest";
+
         byId("approveFollowup").disabled =
           status.state !== "AWAITING_CLINICIAN_REVIEW";
         byId("queueUpdate").disabled =
@@ -422,12 +564,6 @@ function updateWorkflowDescriptions(status) {
         byId("acknowledgeUpdate").disabled =
           status.state !== "DELIVERED";
 
-        if (status.state === "ACKNOWLEDGED") {
-          byId("patientAckFeedback").textContent =
-            "Fictional patient acknowledgement recorded. " +
-            "This does not mean clinical follow-up is complete.";
-        }
-
         byId("deliverUpdate").disabled =
           status.state !== "DELIVERY_UNCONFIRMED";
 
@@ -435,11 +571,6 @@ function updateWorkflowDescriptions(status) {
 
         byId("receiveConfirmedReport").disabled = !hasPendingReport;
         byId("runAgent").disabled = !hasPendingReport;
-
-        if (!hasPendingReport) {
-          byId("staffActionFeedback").textContent =
-            "All fictional reports received.";
-        }
 
         const timeline = byId("timeline");
         timeline.replaceChildren();
@@ -488,11 +619,6 @@ function updateWorkflowDescriptions(status) {
           "Unable to load the fictional journey.";
       }
     }
-
-        byId("approveFollowup").addEventListener(
-          "click",
-          approveFictionalFollowup
-        );
 
     async function loadEvidenceReview() {
       const panel = byId("evidenceReview");
@@ -589,7 +715,7 @@ async function receiveConfirmedReport() {
     "LABCONF-001 for clinic order T-03?\n\n" +
     "This will add the third fictional report and require " +
     "a separate clinician review. It will not send a message.\n\n" +
-    "This change persists in the local demo database."
+    "This change is saved to the fictional demo case."
   );
 
   if (!approved) return;
@@ -632,26 +758,24 @@ async function receiveConfirmedReport() {
 
     completed = true;
 
-    feedback.textContent =
-      "Fictional report " + result.report_id +
-      " received. Case version " + result.case_version +
-      ". Clinician review is now required.";
+    // Earlier drafts described the now-resolved order.
+    byId("agentDetails").replaceChildren();
 
     await Promise.all([
       loadPatientView(),
       loadEvidenceReview()
     ]);
 
-    byId("agentStatus").textContent =
-      "Earlier investigation completed; clinician review pending.";
-
-    byId("agentDetails").replaceChildren();
+    feedback.textContent =
+      "Fictional report " + result.report_id +
+      " received. Clinician review is now required.";
 
   } catch (error) {
+    await loadPatientView();
     feedback.textContent =
       "Report receipt not completed: " + error.message;
   } finally {
-    if (!completed) {
+    if (!completed && latestStatus && latestStatus.pending_count > 0) {
       button.disabled = false;
     }
   }
@@ -683,7 +807,7 @@ async function approveFictionalFollowup() {
       );
     }
 
-    const result = await readJSON(
+    await readJSON(
       "/demo/clinician/approve",
       {
         method: "POST",
@@ -698,16 +822,13 @@ async function approveFictionalFollowup() {
       }
     );
 
-    feedback.textContent =
-      "Fictional clinician approval recorded. " +
-      "No patient notification has been sent.";
-
+    // The refreshed status line confirms the recorded approval.
     await loadPatientView();
 
   } catch (error) {
+    await loadPatientView();
     feedback.textContent =
       "Approval not completed: " + error.message;
-    button.disabled = false;
   }
 }
 
@@ -721,6 +842,12 @@ async function runCommunicationAction(
 
   const feedback = byId("deliveryFeedback");
   feedback.textContent = "Processing fictional communication…";
+
+  // Prevent a double click from submitting twice.
+  byId("queueUpdate").disabled = true;
+  byId("deliverUpdate").disabled = true;
+
+  let message = null;
 
   try {
     const current = await readJSON(
@@ -747,15 +874,24 @@ async function runCommunicationAction(
       }
     );
 
-    feedback.textContent =
-      "Fictional communication action completed: " +
-      result.action;
+    if (
+      result.notification_status &&
+      result.notification_status !== "delivered"
+    ) {
+      message =
+        "Delivery could not be confirmed yet. " +
+        "Use Verify fictional delivery to check again.";
+    }
 
   } catch (error) {
-    feedback.textContent =
-      "Action not completed: " + error.message;
-  } finally {
-    await loadPatientView();
+    message = "Action not completed: " + error.message;
+  }
+
+  // On success the refreshed status line describes the new stage.
+  await loadPatientView();
+
+  if (message) {
+    feedback.textContent = message;
   }
 }
 
@@ -820,14 +956,42 @@ async function acknowledgeFictionalUpdate() {
       }
     );
 
-    feedback.textContent =
-      "Fictional patient receipt acknowledgement recorded.";
+    await loadPatientView();
 
   } catch (error) {
+    await loadPatientView();
     feedback.textContent =
       "Acknowledgement not recorded: " + error.message;
-  } finally {
-    await loadPatientView();
+  }
+}
+
+
+async function restartGuestCase() {
+  if (!window.confirm(
+    "Start over with a fresh fictional case?\n\n" +
+    "Your current demo progress will be discarded. " +
+    "Other visitors are not affected."
+  )) return;
+
+  const button = byId("restartCase");
+  button.disabled = true;
+
+  try {
+    await readJSON(
+      "/demo/session/restart",
+      {
+        method: "POST",
+        headers: { "X-Demo-Confirmation": "yes" }
+      }
+    );
+
+    // A full reload clears every panel from the previous case.
+    window.location.reload();
+
+  } catch (error) {
+    byId("sessionFeedback").textContent =
+      "Could not start over: " + error.message;
+    button.disabled = false;
   }
 }
 
@@ -902,6 +1066,14 @@ async function loadResearchEvidence() {
 
         status.textContent = result.status.replaceAll("_", " ");
 
+        if (result.reason) {
+          addStep(
+            details,
+            "Why the investigation stopped",
+            result.reason
+          );
+        }
+
         addStep(
           details,
           "Model",
@@ -940,7 +1112,8 @@ async function loadResearchEvidence() {
         status.textContent = "Investigation unavailable";
         addStep(details, "Error", error.message);
       } finally {
-        button.disabled = false;
+        button.disabled =
+          !latestStatus || latestStatus.pending_count === 0;
         button.textContent = "Run Vultr AI investigation";
       }
     }
@@ -973,6 +1146,11 @@ async function loadResearchEvidence() {
     byId("acknowledgeUpdate").addEventListener(
       "click",
       acknowledgeFictionalUpdate
+    );
+
+    byId("restartCase").addEventListener(
+      "click",
+      restartGuestCase
     );
 
     loadPatientView();

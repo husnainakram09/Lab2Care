@@ -1,38 +1,30 @@
 
-"""Local-only investigation of the shared fictional case.
+"""Model-driven investigation of the caller's fictional case.
 
 No patient communication, report attachment, or clinical
-approval. Never expose this endpoint publicly.
+approval. Paid inference is bounded by an in-process budget.
 """
 
 import os
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Request
-from openai import OpenAI
+from fastapi import APIRouter, Depends, HTTPException
+from openai import APIError, APITimeoutError, OpenAI
 
 from agent.runner import investigate_case
 from agent.tools import LabInvestigationTools
-from api.demo_state import get_demo_db
+from api.access import DemoCase, demo_case_for_action
+from api.inference_budget import budget_from_environment
 from storage.repository import get_case
 
 
 router = APIRouter()
 ROOT = Path(__file__).resolve().parents[1]
+budget = budget_from_environment()
 
 
 @router.post("/demo/agent/investigate")
-def investigate_demo(request: Request):
-
-    if (
-        request.client is None
-        or request.client.host not in {"127.0.0.1", "::1"}
-        or request.headers.get("X-Demo-Confirmation") != "yes"
-    ):
-        raise HTTPException(
-            status_code=403,
-            detail="Local demo access only",
-        )
+def investigate_demo(demo: DemoCase = Depends(demo_case_for_action)):
 
     key = os.getenv("VULTR_SERVERLESS_INFERENCE_API_KEY")
     model = os.getenv("VULTR_MODEL")
@@ -43,14 +35,18 @@ def investigate_demo(request: Request):
             detail="Vultr inference not configured",
         )
 
-    try:
-        db_path = get_demo_db()
-    except FileNotFoundError:
-        raise HTTPException(
-            status_code=503,
-            detail="Shared fictional database unavailable",
-        )
+    refusal = budget.acquire(demo.session_id or "shared")
 
+    if refusal is not None:
+        raise HTTPException(status_code=429, detail=refusal)
+
+    try:
+        return _investigate(demo.db_path, key, model)
+    finally:
+        budget.release()
+
+
+def _investigate(db_path, key, model):
     before = get_case(db_path, "CASE-001")
 
     if before is None:
@@ -72,12 +68,29 @@ def investigate_demo(request: Request):
         max_retries=1,
     )
 
-    result = investigate_case(
-        client=client,
-        model=model,
-        tools=tools,
-        max_rounds=5,
-    )
+    try:
+        result = investigate_case(
+            client=client,
+            model=model,
+            tools=tools,
+            max_rounds=5,
+        )
+    except APITimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail=(
+                "Vultr inference did not respond in time. "
+                "No case data was changed. Try again shortly."
+            ),
+        )
+    except APIError:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Vultr inference request failed. "
+                "No case data was changed. Try again shortly."
+            ),
+        )
 
     after = get_case(db_path, "CASE-001")
 
@@ -96,6 +109,7 @@ def investigate_demo(request: Request):
         "case_version": before["version"],
         "model": model,
         "status": result["status"],
+        "reason": result.get("reason"),
         "tool_sequence": [
             item["tool"]
             for item in result["trace"]

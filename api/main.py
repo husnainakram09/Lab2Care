@@ -11,7 +11,8 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 
-from core.followup import build_patient_status
+from api.demo_state import ACTIVE_DB
+from core.followup import build_patient_status, delivery_from_outbox
 from storage.approvals import get_current_approval
 from storage.db import connect_db
 from storage.repository import get_case
@@ -76,26 +77,13 @@ def create_app(db_path, timeline_path=None):
                 (case_id, case["version"]),
             ).fetchone()
 
-        delivery = None
-
-        if row is not None:
-            # Internal worker states are not patient states.
-            status_mapping = {
-                "queued": "queued",
-                "sending": "unknown",
-                "sent": "sent",
-                "unknown": "unknown",
-                "failed": "failed",
-                "delivered": "delivered",
-            }
-
-            normalized = status_mapping.get(row[1])
-
-            if normalized is not None:
-                delivery = {
-                    "case_version": row[0],
-                    "status": normalized,
-                }
+        delivery = (
+            delivery_from_outbox(
+                {"case_version": row[0], "status": row[1]}
+            )
+            if row is not None
+            else None
+        )
 
         result = build_patient_status(
             case,
@@ -125,19 +113,13 @@ def create_app(db_path, timeline_path=None):
             ),
         }
 
-        # Local integration demo only.
-        # Disabled by default for public deployments.
-        if os.getenv("FOLLOWUP_ENABLE_LOCAL_AGENT") == "1":
-            from api.local_agent import router as local_agent_router
-            app.include_router(local_agent_router)
-
-
     return app
 
 
+# Same database the workflow routes use (api.demo_state.ACTIVE_DB).
 app = create_app(
     os.environ.get(
         "FOLLOWUP_DEMO_DB",
-        "runtime/demo/clinic.db",
+        str(ACTIVE_DB),
     )
 )

@@ -5,11 +5,9 @@ Not real authentication, medical advice, or clinical approval.
 The AI agent cannot invoke this action.
 """
 
+from api.case_status import read_active_case_status
 from core.followup import build_patient_status
-from storage.approvals import (
-    approve_followup,
-    get_current_approval,
-)
+from storage.approvals import approve_followup
 from storage.repository import get_case
 
 
@@ -57,17 +55,9 @@ def simulate_clinician_approval(
         instructions=DEMO_INSTRUCTIONS,
     )
 
-    approval = get_current_approval(
-        db_path,
-        "CASE-001",
-    )
-
-    updated_case = get_case(db_path, "CASE-001")
-
-    status = build_patient_status(
-        updated_case,
-        approval=approval,
-    )
+    # A repeated approval is an idempotent no-op, so report the
+    # case's real state, including any later delivery steps.
+    updated_case, status = read_active_case_status(db_path)
 
     return {
         "case_id": "CASE-001",

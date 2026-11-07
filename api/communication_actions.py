@@ -5,10 +5,14 @@ Local demo only. No real notification service.
 """
 
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 from core.followup import build_patient_status
-from services.delivery_worker import dispatch_notification
+from services.delivery_worker import (
+    dispatch_notification,
+    recover_notification,
+)
 from services.fake_notification import FakeNotificationGateway
 from storage.approvals import get_current_approval
 from storage.outbox import (
@@ -20,6 +24,8 @@ from storage.repository import get_case
 
 CASE_ID = "CASE-001"
 
+UNCONFIRMED_STATUSES = ("queued", "sending", "unknown")
+
 
 def get_current_notification(db_path):
     """Find the persisted notification for the active case version."""
@@ -28,7 +34,7 @@ def get_current_notification(db_path):
     if case is None:
         return None
 
-    with sqlite3.connect(str(db_path)) as connection:
+    with closing(sqlite3.connect(str(db_path))) as connection:
         row = connection.execute(
             """
             SELECT notification_id
@@ -100,9 +106,9 @@ def deliver_demo_update(db_path, *, expected_version):
     if notification is None:
         raise ValueError("No queued notification found")
 
-    if notification["status"] != "queued":
+    if notification["status"] not in UNCONFIRMED_STATUSES:
         raise ValueError(
-            "Notification is not in the queued state"
+            "Notification is not awaiting delivery"
         )
 
     destination_db = (
@@ -111,11 +117,25 @@ def deliver_demo_update(db_path, *, expected_version):
 
     gateway = FakeNotificationGateway(destination_db)
 
-    result = dispatch_notification(
-        db_path,
-        notification["notification_id"],
-        gateway,
+    # A queued message is sent once. An interrupted or unconfirmed
+    # one is reconciled with the destination before any resend.
+    deliver = (
+        dispatch_notification
+        if notification["status"] == "queued"
+        else recover_notification
     )
+
+    try:
+        result = deliver(
+            db_path,
+            notification["notification_id"],
+            gateway,
+        )
+    except sqlite3.Error as error:
+        raise ValueError(
+            "Delivery could not be confirmed. "
+            "Verify delivery again."
+        ) from error
 
     updated = get_notification(
         db_path,

@@ -16,6 +16,7 @@ from openai import OpenAI
 
 from agent.runner import investigate_case
 from agent.tools import LabInvestigationTools
+from api.env_file import load_env_file
 from storage.db import initialize_db
 from storage.repository import create_case, get_case
 
@@ -207,6 +208,7 @@ def main():
     )
     arguments = parser.parse_args()
 
+    load_env_file()
     key = os.environ.get(
         "VULTR_SERVERLESS_INFERENCE_API_KEY"
     )

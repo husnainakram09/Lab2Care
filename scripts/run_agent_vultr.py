@@ -14,6 +14,7 @@ from openai import OpenAI
 
 from agent.runner import investigate_case
 from agent.tools import LabInvestigationTools
+from api.env_file import load_env_file
 from storage.db import initialize_db
 from storage.repository import create_case
 
@@ -22,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main():
+    load_env_file()
     key = os.getenv("VULTR_SERVERLESS_INFERENCE_API_KEY")
     model = os.getenv("VULTR_MODEL")
 

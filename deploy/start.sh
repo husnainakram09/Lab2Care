@@ -10,6 +10,13 @@ cd "$PROJECT_ROOT"
 export FOLLOWUP_ENABLE_LOCAL_AGENT=1
 export FOLLOWUP_DEMO_DB="runtime/active/clinic.db"
 
+# Public visitors each get a private fictional case, so nobody can
+# complete or jam the demo for the next reviewer. Behind the proxy
+# every client looks local, so the shared case must not be served.
+export FOLLOWUP_GUEST_SESSIONS=1
+# The site is served over HTTPS only.
+export FOLLOWUP_SECURE_COOKIES=1
+
 if [[ -z "${VULTR_SERVERLESS_INFERENCE_API_KEY:-}" ]]; then
     echo "ERROR: Vultr inference API key is missing."
     exit 1

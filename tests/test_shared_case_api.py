@@ -6,10 +6,20 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 import os
+import sqlite3
+from contextlib import closing
+from types import SimpleNamespace
 
+import httpx
 from fastapi.testclient import TestClient
+from openai import APITimeoutError
 
 from api.demo_state import prepare_demo_db
+from services.delivery_worker import (
+    SimulatedWorkerCrash,
+    dispatch_notification,
+)
+from services.fake_notification import FakeNotificationGateway
 from storage.repository import ingest_report
 
 
@@ -545,6 +555,168 @@ class TestSharedCaseAPI(unittest.TestCase):
         )
         self.assertFalse(data["linked_to_active_demo"])
         self.assertFalse(data["clinical_outcomes_evaluated"])
+
+    def queue_notification(self):
+        headers = self.prepare_approved_case_for_delivery()
+
+        queued = self.client.post(
+            "/demo/clinic/queue-notification",
+            headers=headers,
+            json={"expected_version": 2},
+        )
+        self.assertEqual(queued.status_code, 200)
+
+        return headers, queued.json()["notification_id"]
+
+    def set_outbox_status(self, status):
+        with closing(sqlite3.connect(self.db_path)) as db, db:
+            db.execute(
+                "UPDATE notification_outbox SET status = ?",
+                (status,),
+            )
+
+    def destination(self):
+        return FakeNotificationGateway(
+            self.db_path.with_name("destination.db")
+        )
+
+    def test_status_survives_internal_outbox_states(self):
+        self.queue_notification()
+
+        for status, expected in (
+            ("sending", "DELIVERY_UNCONFIRMED"),
+            ("unknown", "DELIVERY_UNCONFIRMED"),
+            ("superseded", "DELIVERY_FAILED"),
+        ):
+            self.set_outbox_status(status)
+
+            response = self.client.get("/demo/active-case/status")
+
+            self.assertEqual(response.status_code, 200, status)
+            self.assertEqual(response.json()["state"], expected)
+
+    def test_interrupted_delivery_is_verified_not_resent(self):
+        headers, notification_id = self.queue_notification()
+
+        with self.assertRaises(SimulatedWorkerCrash):
+            dispatch_notification(
+                self.db_path,
+                notification_id,
+                self.destination(),
+                simulate_crash_after_send=True,
+            )
+
+        response = self.client.post(
+            "/demo/clinic/deliver-notification",
+            headers=headers,
+            json={"expected_version": 2},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()["notification_status"], "delivered"
+        )
+        self.assertEqual(self.destination().delivery_count(), 1)
+
+    def test_unconfirmed_delivery_can_be_retried_once(self):
+        headers, _ = self.queue_notification()
+        self.set_outbox_status("unknown")
+
+        for _ in range(2):
+            response = self.client.post(
+                "/demo/clinic/deliver-notification",
+                headers=headers,
+                json={"expected_version": 2},
+            )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(
+            self.client.get("/demo/active-case/status").json()["state"],
+            "DELIVERED",
+        )
+        self.assertEqual(self.destination().delivery_count(), 1)
+
+    def test_repeated_approval_reports_current_state(self):
+        headers, _ = self.queue_notification()
+
+        response = self.client.post(
+            "/demo/clinician/approve",
+            headers=headers,
+            json={"expected_version": 2, "clinician_attested": True},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()["state"], "DELIVERY_UNCONFIRMED"
+        )
+
+    def test_attestation_requires_json_boolean(self):
+        response = self.client.post(
+            "/demo/staff/receive-confirmed-report",
+            headers={"X-Demo-Confirmation": "yes"},
+            json={
+                "confirmation_id": "LABCONF-001",
+                "expected_version": 1,
+                "staff_attested": "true",
+            },
+        )
+
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(
+            self.client.get("/demo/active-case/status").json()[
+                "received_count"
+            ],
+            2,
+        )
+
+    def investigate_with(self, client_class):
+        local = TestClient(self.app, client=("127.0.0.1", 50000))
+
+        with patch.dict(os.environ, {
+            "VULTR_SERVERLESS_INFERENCE_API_KEY": "test-key",
+            "VULTR_MODEL": "test-model",
+        }), patch("api.local_agent.OpenAI", client_class):
+            try:
+                return local.post(
+                    "/demo/agent/investigate",
+                    headers={"X-Demo-Confirmation": "yes"},
+                )
+            finally:
+                local.close()
+
+    def test_inference_timeout_returns_clear_error(self):
+        class TimingOutClient:
+            def __init__(self, **_):
+                self.chat = self
+                self.completions = self
+
+            def create(self, **_):
+                raise APITimeoutError(
+                    request=httpx.Request("POST", "https://example.test")
+                )
+
+        response = self.investigate_with(TimingOutClient)
+
+        self.assertEqual(response.status_code, 504)
+        self.assertIn("No case data was changed", response.json()["detail"])
+
+    def test_investigation_explains_why_it_stopped(self):
+        class SilentClient:
+            def __init__(self, **_):
+                self.chat = self
+                self.completions = self
+
+            def create(self, **_):
+                message = SimpleNamespace(content="", tool_calls=None)
+                return SimpleNamespace(
+                    choices=[SimpleNamespace(message=message)]
+                )
+
+        response = self.investigate_with(SilentClient)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "INCOMPLETE")
+        self.assertTrue(response.json()["reason"])
 
 if __name__ == "__main__":
     unittest.main()

@@ -38,6 +38,36 @@ DELIVERY_STATES = {
     "queued", "sent", "unknown", "failed", "delivered"
 }
 
+# Internal outbox worker states are not patient states. A message
+# superseded for the current case version lost its authorization,
+# so it cannot be sent and staff must follow up.
+OUTBOX_TO_DELIVERY_STATUS = {
+    "queued": "queued",
+    "sending": "unknown",
+    "sent": "sent",
+    "unknown": "unknown",
+    "failed": "failed",
+    "delivered": "delivered",
+    "superseded": "failed",
+}
+
+
+def delivery_from_outbox(notification):
+    """Map a stored outbox row to a patient-safe delivery record."""
+
+    if notification is None:
+        return None
+
+    status = OUTBOX_TO_DELIVERY_STATUS.get(notification["status"])
+
+    if status is None:
+        return None
+
+    return {
+        "case_version": notification["case_version"],
+        "status": status,
+    }
+
 
 def build_patient_status(
     case,

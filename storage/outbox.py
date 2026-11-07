@@ -253,3 +253,47 @@ def reserve_notification(db_path, notification_id):
             "instructions": instructions,
             "case_version": version,
         }
+
+
+def reclaim_unconfirmed_notification(db_path, notification_id):
+    """Internal worker claim for a delivery left unconfirmed.
+
+    Only an 'unknown' message is claimed. The caller must recheck
+    authorization and reuse the original idempotency key.
+    """
+
+    with connect_db(db_path) as db:
+        db.execute("BEGIN IMMEDIATE")
+
+        row = db.execute(
+            """
+            SELECT status, case_version, idempotency_key, instructions
+            FROM notification_outbox
+            WHERE notification_id = ?
+            """,
+            (notification_id,),
+        ).fetchone()
+
+        if row is None:
+            raise KeyError("Unknown notification")
+
+        status, version, key, instructions = row
+
+        if status != "unknown":
+            return {"outcome": "not_unknown", "status": status}
+
+        db.execute(
+            """
+            UPDATE notification_outbox
+            SET status = 'sending'
+            WHERE notification_id = ?
+            """,
+            (notification_id,),
+        )
+
+        return {
+            "outcome": "claimed",
+            "idempotency_key": key,
+            "instructions": instructions,
+            "case_version": version,
+        }

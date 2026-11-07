@@ -1,7 +1,10 @@
 """Controlled delivery worker for the fictional notification gateway."""
 
 from storage.db import connect_db
-from storage.outbox import reserve_notification
+from storage.outbox import (
+    reclaim_unconfirmed_notification,
+    reserve_notification,
+)
 
 
 class SimulatedWorkerCrash(RuntimeError):
@@ -149,6 +152,46 @@ def dispatch_notification(
     if claimed["outcome"] != "claimed":
         return claimed
 
+    return _send_claimed(
+        db_path,
+        notification_id,
+        gateway,
+        claimed,
+        simulate_crash_after_send=simulate_crash_after_send,
+    )
+
+
+def recover_notification(db_path, notification_id, gateway):
+    """Resolve a delivery whose outcome was never confirmed.
+
+    The destination is checked first. Only when it holds no receipt
+    is the message resent, under the same idempotency key, so the
+    destination cannot record it twice.
+    """
+
+    verified = verify_delivery(db_path, notification_id, gateway)
+
+    if verified["outcome"] != "unknown":
+        return verified
+
+    claimed = reclaim_unconfirmed_notification(
+        db_path, notification_id
+    )
+
+    if claimed["outcome"] != "claimed":
+        return claimed
+
+    return _send_claimed(db_path, notification_id, gateway, claimed)
+
+
+def _send_claimed(
+    db_path,
+    notification_id,
+    gateway,
+    claimed,
+    *,
+    simulate_crash_after_send=False,
+):
     if not _preflight(db_path, notification_id):
         return {"outcome": "superseded"}
 

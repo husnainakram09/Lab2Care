@@ -245,6 +245,26 @@ class TestAgentRunner(unittest.TestCase):
             "REQUEST_MISSING_REPORT_STATUS",
         )
 
+    def test_empty_arguments_for_argument_free_tool(self):
+        empty_call = tool_call("get_pending_orders", {}, "c1")
+        empty_call.function.arguments = ""
+
+        client = FakeModelClient([
+            answer([empty_call]),
+            answer(content="Nothing drafted."),
+        ])
+
+        result = investigate_case(
+            client, "mock-model", self.tools
+        )
+
+        self.assertEqual(
+            [item["tool"] for item in result["trace"]],
+            ["get_pending_orders"],
+        )
+        self.assertEqual(result["status"], "INCOMPLETE")
+        self.assertTrue(result["reason"])
+
 
 if __name__ == "__main__":
     unittest.main()

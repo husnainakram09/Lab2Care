@@ -124,6 +124,13 @@ class TestAuditTimeline(unittest.TestCase):
             [event["kind"] for event in history["events"]],
         )
 
+        # Every source table is shown in one UTC format.
+        for event in history["events"]:
+            self.assertRegex(
+                event["occurred_at"],
+                r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
